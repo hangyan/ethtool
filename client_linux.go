@@ -98,6 +98,19 @@ func (c *client) LinkInfo(ifi Interface) (*LinkInfo, error) {
 	return lis[0], nil
 }
 
+func (c *client) DisableVlanCsumOffloading(name string) ([]genetlink.Message, error) {
+	body := []byte{0x04,0x00,0x01,0x80,0x10,0x00,0x02,0x80,0x0c,0x00,0x01,0x80,0x08,0x00,0x01,0x00,0x04,0x00,0x00,0x00}
+	ifi := Interface{
+		Name: name,
+	}
+	msgs, err := c.getWithRawBody(unix.ETHTOOL_MSG_STRSET_GET_REPLY,0, ifi, body)
+	if err != nil {
+		return nil, err
+	}
+	return msgs, err
+
+}
+
 // linkInfo is the shared logic for Client.LinkInfo(s).
 func (c *client) linkInfo(flags netlink.HeaderFlags, ifi Interface) ([]*LinkInfo, error) {
 	msgs, err := c.get(
@@ -115,7 +128,7 @@ func (c *client) linkInfo(flags netlink.HeaderFlags, ifi Interface) ([]*LinkInfo
 }
 
 
-func ()
+
 
 
 // LinkModes fetches modes for all ethtool-supported links.

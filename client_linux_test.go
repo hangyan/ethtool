@@ -15,6 +15,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func TestDecodeData(t *testing.T) {
+	body := []byte{0x04,0x00,0x01,0x80,0x10,0x00,0x02,0x80,0x0c,0x00,0x01,0x80,0x08,0x00,0x01,0x00,0x04,0x00,0x00,0x00}
+	ad , err := netlink.NewAttributeDecoder(body)
+	if err != nil {
+		t.Error(err)
+	}
+	for ad.Next() {
+		t.Log(ad.Type())
+	}
+}
+
 func TestLinuxClientErrors(t *testing.T) {
 	tests := []struct {
 		name  string

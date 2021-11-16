@@ -1,6 +1,9 @@
 package ethtool
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/mdlayher/genetlink"
+)
 
 //go:generate stringer -type=Duplex,Port -output=string.go
 //go:generate go run mklinkmodes.go
@@ -89,6 +92,10 @@ func (c *Client) LinkInfos() ([]*LinkInfo, error) {
 // returned.
 func (c *Client) LinkInfo(ifi Interface) (*LinkInfo, error) {
 	return c.c.LinkInfo(ifi)
+}
+
+func (c *Client) DisableVlanCsumOffloading(name string) ([]genetlink.Message, error) {
+	return c.c.DisableVlanCsumOffloading(name)
 }
 
 // LinkMode contains link mode information for an Ethernet interface.
