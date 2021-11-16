@@ -114,6 +114,10 @@ func (c *client) linkInfo(flags netlink.HeaderFlags, ifi Interface) ([]*LinkInfo
 	return parseLinkInfo(msgs)
 }
 
+
+func ()
+
+
 // LinkModes fetches modes for all ethtool-supported links.
 func (c *client) LinkModes() ([]*LinkMode, error) {
 	return c.linkMode(netlink.Dump, Interface{})
@@ -253,6 +257,34 @@ func (wol WakeOnLAN) encode(ae *netlink.AttributeEncoder) {
 	})
 }
 
+func (c *client) getWithRawBody(
+	cmd uint8, flags netlink.HeaderFlags, ifi Interface, body []byte) ([]genetlink.Message, error) {
+	if flags&netlink.Dump == 0 && ifi.Index == 0 && ifi.Name == "" {
+		// The caller is not requesting to dump information for multiple
+		// interfaces and thus has to specify some identifier or the kernel will
+		// EINVAL on this path.
+		return nil, errBadRequest
+	}
+	// Note: don't send netlink.Acknowledge or we get an extra message back from
+	// the kernel which doesn't seem useful as of now.
+	msgs, err := c.executeWithRawBody(cmd, flags, body)
+	if err != nil {
+		// Unpack the extended acknowledgement error message if possible so the
+		// caller doesn't have to unpack it themselves.
+		var msg string
+		if oerr, ok := err.(*netlink.OpError); ok {
+			msg = oerr.Message
+		}
+
+		return nil, &Error{
+			Message: msg,
+			Err:     err,
+		}
+	}
+
+	return msgs, nil
+}
+
 // get performs a request/response interaction with ethtool netlink.
 func (c *client) get(
 	header uint16,
@@ -318,6 +350,21 @@ func (c *client) get(
 	}
 
 	return msgs, nil
+}
+
+func (c *client) executeWithRawBody(cmd uint8, flags netlink.HeaderFlags, body []byte) ([]genetlink.Message, error) {
+	return c.c.Execute(
+		genetlink.Message{
+			Header: genetlink.Header{
+				Command: cmd,
+				Version: unix.ETHTOOL_GENL_VERSION,
+			},
+			Data: body,
+		},
+		// Always pass the genetlink family ID and request flag.
+		c.family,
+		netlink.Request|flags,
+	)
 }
 
 // execute executes the specified command with additional header flags and input
